@@ -71,8 +71,8 @@ int main()
 		fprintf(stderr, "Private key does not match the public certificate\n");
 		abort();
 	}
-	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
-	SSL_CTX_load_verify_locations(ctx, "rootCA.crt", NULL);
+	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL); //ustawienie weryfikacji certyfikatów
+	SSL_CTX_load_verify_locations(ctx, "rootCA.crt", NULL); //ustawienie bazowego certyfikatu
 
 	// Tworzenie gniazda
 	SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -112,17 +112,17 @@ int main()
 	for (int i = 0; i < MAX_CLIENTS; i++)
 		ssl_clients[i] = NULL;
 	// Struktura z informacjami o aktywności gniazd
-	WSAPOLLFD fds[MAX_CLIENTS + 1];
+	WSAPOLLFD fds[MAX_CLIENTS + 1];  //pierwszy przypisany do serwera
 	while (1)
 	{
 		fds[0].fd = sock;
 		fds[0].events = POLLRDNORM;
-		fds[0].revents = 0;
+		fds[0].revents = 0; //otwiera nasłuchiwanie
 
 		// Przepisanie gniazd klientów do struktury
 		for (int i = 0; i < MAX_CLIENTS; i++)
 		{
-			if (ssl_clients[i])
+			if (ssl_clients[i])  //przypisanie klientów do puli
 			{
 				fds[i + 1].fd = SSL_get_fd(ssl_clients[i]);
 				fds[i + 1].events = POLLRDNORM;
@@ -137,7 +137,7 @@ int main()
 		}
 
 		// Oczekiwanie na aktywność gniazd
-		int ret = WSAPoll(fds, MAX_CLIENTS + 1, -1);
+		int ret = WSAPoll(fds, MAX_CLIENTS + 1, -1); //nasłuchiwanie 
 		if (ret == SOCKET_ERROR)
 		{
 			printf("WSAPoll failed.\n");
@@ -147,7 +147,7 @@ int main()
 		// Sprawdzenie aktywności gniazda nasłuchującego
 		if (fds[0].revents & POLLRDNORM)
 		{
-			// Struktura z informacjami o adresie klienta
+			// Struktura z informacjami o adresie klienta, tworzenie
 			struct sockaddr_in client_addr;
 			int client_addr_len = sizeof(client_addr);
 
@@ -189,7 +189,7 @@ int main()
 			ShowCerts(ssl_client);
 
 			// Weryfikacja certyfikatu klienta
-			X509* client_cert = SSL_get_peer_certificate(ssl_client);
+			X509* client_cert = SSL_get_peer_certificate(ssl_client); //zaciągniecie certyfikatu
 			if (!client_cert)
 			{
 				printf("SSL_get_peer_certificate failed.\n");
@@ -210,9 +210,6 @@ int main()
 				closesocket(client_sock);
 				continue;
 			}
-
-			// Autoryzacja klienta na podstawie certyfikatu
-			// (można tu zaimplementować własny algorytm autoryzacji)
 
 			// Zwalnianie certyfikatu klienta
 			X509_free(client_cert);
@@ -242,7 +239,7 @@ int main()
 		}
 
 		// Obsługa aktywności gniazd klientów
-		for (int i = 0; i < MAX_CLIENTS; i++)
+		for (int i = 0; i < MAX_CLIENTS; i++) 
 		{
 			if (fds[i + 1].revents & POLLRDNORM)
 				handle_connection(ssl_clients[i]);
@@ -268,7 +265,7 @@ void handle_connection(SSL* ssl)
 {
 	// Odbieranie certyfikatu klienta
 	char buffer[1024];
-	if (SSL_read(ssl, buffer, sizeof(buffer)) <= 0)
+	/*if (SSL_read(ssl, buffer, sizeof(buffer)) <= 0)
 	{
 		printf("SSL_read failed.\n");
 		return;
@@ -291,7 +288,7 @@ void handle_connection(SSL* ssl)
 	}
 
 	// Zwalnianie certyfikatu
-	X509_free(cert);
+	X509_free(cert);*/
 
 	// Pętla obsługi komend
 	while (1)
@@ -303,7 +300,8 @@ void handle_connection(SSL* ssl)
 			break;
 		}
 
-		const char* serverResponse= "Test text dasdasd\n";
+		//const char* serverResponse= "Test text dasdasd\n";
+		// 
 		// Obsługa komendy 'send'
 		if (strncmp(buffer, "send", 4) == 0)
 		{
